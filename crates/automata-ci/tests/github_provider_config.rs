@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
@@ -11,7 +12,7 @@ use automata_ci::{
         ServerConfig,
     },
 };
-use automata_ci_core::JobAuthorityProfile;
+use automata_ci_core::{JobAuthorityProfile, RunnerFeature};
 use automata_ci_store::{
     GithubProviderWorkflowSelection, GithubServerServiceJwtIssuer,
     MAX_WORKFLOW_RUNTIME_POLICY_BYTES, ProviderRepositoryVisibility, WorkflowRuntimePolicy,
@@ -25,11 +26,12 @@ const HMAC_MARKER: &str = "AUTOMATA_TEST_PROVIDER_HMAC_MARKER";
 const RUNNER_POLICY_CONFIGURATION: &[u8] = br#"{
   "workspace":{"derivation":1,"root":"/__w","schema":1},
   "mappings":[{
+    "runner_features":{"schema":1,"supported":["automata.core/bash-shell@v1","automata.core/command-files@v1","automata.core/composite-actions@v1","automata.core/default-posix-shell@v1","automata.core/javascript-actions@v1","automata.core/job-summaries@v1","automata.core/local-actions@v1","automata.core/node20-actions@v1","automata.core/node24-actions@v1","automata.core/python-shell@v1","automata.core/repository-actions@v1","automata.core/sh-shell@v1","automata.core/shell-steps@v1"]},
     "container_features":["automata.core/job-containers@v1"],
     "architecture":"x86_64","operating_system":"linux",
     "environment_profile":{"manifest_sha256":"1111111111111111111111111111111111111111111111111111111111111111","id":"automata.example/ubuntu-24-04"},
     "selector":"Ubuntu-24.04"
-  }],"permissions":{"provider_default":{"contents":"read"},"read_all":{"contents":"read"},"write_all":{"contents":"write"}},"resources":{"defaults":{"requests":{"cpu_millis":100,"memory_bytes":268435456,"ephemeral_disk_bytes":0,"gpu_count":0},"limits":{"cpu_millis":1000,"memory_bytes":1073741824,"ephemeral_disk_bytes":0,"gpu_count":0}},"minimum_requests":{"cpu_millis":100,"memory_bytes":268435456,"ephemeral_disk_bytes":0,"gpu_count":0},"maximum_limits":{"cpu_millis":4000,"memory_bytes":8589934592,"ephemeral_disk_bytes":0,"gpu_count":0}},"schema":1
+  }],"permissions":{"provider_default":{"contents":"read"},"read_all":{"contents":"read"},"write_all":{"contents":"write"}},"resources":{"defaults":{"requests":{"cpu_millis":100,"memory_bytes":268435456,"ephemeral_disk_bytes":0,"gpu_count":0},"limits":{"cpu_millis":1000,"memory_bytes":1073741824,"ephemeral_disk_bytes":0,"gpu_count":0}},"minimum_requests":{"cpu_millis":100,"memory_bytes":268435456,"ephemeral_disk_bytes":0,"gpu_count":0},"maximum_limits":{"cpu_millis":4000,"memory_bytes":8589934592,"ephemeral_disk_bytes":0,"gpu_count":0}},"schema":2
 }"#;
 
 fn test_file(name: &str) -> PathBuf {
@@ -232,6 +234,43 @@ fn runner_policy_preserves_raw_evidence_and_matches_store_codec_golden_values() 
         load_bytes("runner-policy-oversized.json", oversized),
         Err(GithubProviderConfigError)
     );
+}
+
+#[test]
+fn production_example_claims_only_the_configured_linux_toolchain_features() {
+    let document: Value =
+        serde_json::from_slice(include_bytes!("../config/github-provider.example.json"))
+            .expect("production provider example");
+    let expected = BTreeSet::from([
+        RunnerFeature::SHELL_STEPS,
+        RunnerFeature::DEFAULT_POSIX_SHELL,
+        RunnerFeature::BASH_SHELL,
+        RunnerFeature::SH_SHELL,
+        RunnerFeature::PYTHON_SHELL,
+        RunnerFeature::JAVASCRIPT_ACTIONS,
+        RunnerFeature::NODE24_ACTIONS,
+        RunnerFeature::COMPOSITE_ACTIONS,
+        RunnerFeature::REPOSITORY_ACTIONS,
+        RunnerFeature::LOCAL_ACTIONS,
+        RunnerFeature::COMMAND_FILES,
+        RunnerFeature::JOB_SUMMARIES,
+    ]);
+    for repository in document["repositories"]
+        .as_array()
+        .expect("example repository catalog")
+    {
+        let encoded =
+            serde_json::to_vec(&repository["runner_policy"]).expect("nested runner policy JSON");
+        let policy = WorkflowRuntimePolicy::decode_configuration(&encoded)
+            .expect("current production runner policy");
+        assert_eq!(
+            policy.mappings()[0]
+                .runner_feature_policy()
+                .expect("current profile feature policy")
+                .supported(),
+            &expected
+        );
+    }
 }
 
 #[test]

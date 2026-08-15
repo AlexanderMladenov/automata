@@ -37,7 +37,7 @@
       "runtime_policy_revision": 1,
       "authority_profile": "credential_free",
       "runner_policy": {
-        "schema": 1,
+        "schema": 2,
         "workspace": { "schema": 1, "root": "/__w", "derivation": 1 },
         "mappings": [
           {
@@ -48,6 +48,23 @@
             },
             "operating_system": "linux",
             "architecture": "x86_64",
+            "runner_features": {
+              "schema": 1,
+              "supported": [
+                "automata.core/bash-shell@v1",
+                "automata.core/command-files@v1",
+                "automata.core/composite-actions@v1",
+                "automata.core/default-posix-shell@v1",
+                "automata.core/javascript-actions@v1",
+                "automata.core/job-summaries@v1",
+                "automata.core/local-actions@v1",
+                "automata.core/node24-actions@v1",
+                "automata.core/python-shell@v1",
+                "automata.core/repository-actions@v1",
+                "automata.core/sh-shell@v1",
+                "automata.core/shell-steps@v1"
+              ]
+            },
             "container_features": [
               "automata.core/container-actions@v1",
               "automata.core/job-containers@v1",
@@ -145,7 +162,7 @@
       "runtime_policy_revision": 1,
       "authority_profile": "standard",
       "runner_policy": {
-        "schema": 1,
+        "schema": 2,
         "workspace": { "schema": 1, "root": "/__w", "derivation": 1 },
         "mappings": [
           {
@@ -156,6 +173,23 @@
             },
             "operating_system": "linux",
             "architecture": "x86_64",
+            "runner_features": {
+              "schema": 1,
+              "supported": [
+                "automata.core/bash-shell@v1",
+                "automata.core/command-files@v1",
+                "automata.core/composite-actions@v1",
+                "automata.core/default-posix-shell@v1",
+                "automata.core/javascript-actions@v1",
+                "automata.core/job-summaries@v1",
+                "automata.core/local-actions@v1",
+                "automata.core/node24-actions@v1",
+                "automata.core/python-shell@v1",
+                "automata.core/repository-actions@v1",
+                "automata.core/sh-shell@v1",
+                "automata.core/shell-steps@v1"
+              ]
+            },
             "container_features": [
               "automata.core/container-actions@v1",
               "automata.core/job-containers@v1",

@@ -415,7 +415,13 @@ fn runtime_profile_catalog(
                 mapping.architecture().clone(),
             )
             .map(|profile| {
-                profile.with_container_features(mapping.container_features().iter().cloned())
+                let mut profile =
+                    profile.with_container_features(mapping.container_features().iter().cloned());
+                if let Some(policy) = mapping.runner_feature_policy() {
+                    profile =
+                        profile.with_supported_runner_features(policy.supported().iter().cloned());
+                }
+                profile
             })
             .map_err(|_| GithubLogicalJobOrchestrationError::Internal)
         })
